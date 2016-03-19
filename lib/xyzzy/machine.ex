@@ -30,6 +30,9 @@ defmodule Xyzzy.Machine do
       :static_mem => static_mem,
       :flags2 => flags2,
       :abbr_table => abbr_table,
-      :memory => story}
+      :memory => story,
+      :stack => [],
+      :call_stack => [],
+      :locals => %{}}
   end
 end
