@@ -6,21 +6,19 @@ defmodule Xyzzy.Machine do
     end
   end
 
-  def initalize_machine(story) do
-    <<version :: 8,
-     flags1 :: 8,
-     release :: 16,
-     high_mem :: 16,
-     pc :: 16,
-     dictionary :: 16,
-     object_table :: 16,
-     global_vars :: 16,
-     static_mem :: 16,
-     flags2 :: 16,
-     _ :: 48,
-     abbr_table :: 16,
-     _ :: binary >> = story
-
+  defp initalize_machine(story = << version :: 8,
+                                    flags1 :: 8,
+                                    release :: 16,
+                                    high_mem :: 16,
+                                    pc :: 16,
+                                    dictionary :: 16,
+                                    object_table :: 16,
+                                    global_vars :: 16,
+                                    static_mem :: 16,
+                                    flags2 :: 16,
+                                    _ :: 48,
+                                    abbr_table :: 16,
+                                    _ :: binary >>) do
      %{:version => version,
       :flags1 => flags1,
       :release => release,
