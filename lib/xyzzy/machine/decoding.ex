@@ -22,7 +22,6 @@ defmodule Xyzzy.Machine.Decoding do
         {_, [:nb]} -> mem |> :binary.at(pc+1) |> decode_nb
         {_, f} -> f
       end
-    form
   end
 
   defp decode_form(op) when op in 0x00..0x1f, do: {:op2, [:sc, :sc]}
@@ -48,4 +47,5 @@ defmodule Xyzzy.Machine.Decoding do
       end
     end
   end
+
 end
