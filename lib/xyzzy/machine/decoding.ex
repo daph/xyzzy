@@ -1,4 +1,7 @@
 defmodule Xyzzy.Machine.Decoding do
+
+  @operand_sizes %{:sc => 8, :lc => 16, :v => 8, :o => 0}
+
   # unpack/2 will unpack packed addresses for versions 1-5, and 8.
   # Versions 6 and 7 require a different formula, where there are
   # offsets supplied in the header for routines and strings.
@@ -14,23 +17,28 @@ defmodule Xyzzy.Machine.Decoding do
   # decode_opcode/1 takes in the current state, and returns the information
   # on what opcode it is, it's arguments, and the address after its end.
   def decode_opcode(_state = %{memory: mem, pc: pc}) do #WIP
-    :binary.at(mem, pc) |> decode_form
+    form =
+      case mem |> :binary.at(pc) |> decode_form do
+        {_, [:nb]} -> mem |> :binary.at(pc+1) |> decode_nb
+        {_, f} -> f
+      end
+    form
   end
 
-  def decode_form(op) when op in 0x00..0x1f, do: {:op2, {:sc, :sc}}
-  def decode_form(op) when op in 0x20..0x3f, do: {:op2, {:sc, :v}}
-  def decode_form(op) when op in 0x40..0x5f, do: {:op2, {:v, :sc}}
-  def decode_form(op) when op in 0x60..0x7f, do: {:op2, {:v, :v}}
-  def decode_form(op) when op in 0x80..0x8f, do: {:op1, {:lc}}
-  def decode_form(op) when op in 0x90..0x9f, do: {:op1, {:sc}}
-  def decode_form(op) when op in 0xa0..0xaf, do: {:op1, {:v}}
-  def decode_form(op) when op == 0xbe, do: {:ext, {:nb}}
-  def decode_form(op) when op in 0xb0..0xbf, do: {:op1, {:o}}
-  def decode_form(op) when op in 0xc0..0xdf, do: {:op2, {:nb}}
-  def decode_form(op) when op in 0xe0..0xff, do: {:var, {:nb}}
+  defp decode_form(op) when op in 0x00..0x1f, do: {:op2, [:sc, :sc]}
+  defp decode_form(op) when op in 0x20..0x3f, do: {:op2, [:sc, :v]}
+  defp decode_form(op) when op in 0x40..0x5f, do: {:op2, [:v, :sc]}
+  defp decode_form(op) when op in 0x60..0x7f, do: {:op2, [:v, :v]}
+  defp decode_form(op) when op in 0x80..0x8f, do: {:op1, [:lc]}
+  defp decode_form(op) when op in 0x90..0x9f, do: {:op1, [:sc]}
+  defp decode_form(op) when op in 0xa0..0xaf, do: {:op1, [:v]}
+  defp decode_form(op) when op == 0xbe, do: {:ext, [:nb]}
+  defp decode_form(op) when op in 0xb0..0xbf, do: {:op1, [:o]}
+  defp decode_form(op) when op in 0xc0..0xdf, do: {:op2, [:nb]}
+  defp decode_form(op) when op in 0xe0..0xff, do: {:var, [:nb]}
 
   # For decoding VAR and EXT type bytes.
-  def decode_nb(typebyte) do
+  defp decode_nb(typebyte) do
     for << x :: 2 <- <<typebyte>> >> do
       case x do
         0 -> :lc
