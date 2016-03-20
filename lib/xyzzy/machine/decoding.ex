@@ -14,8 +14,7 @@ defmodule Xyzzy.Machine.Decoding do
   # decode_opcode/1 takes in the current state, and returns the information
   # on what opcode it is, it's arguments, and the address after its end.
   def decode_opcode(_state = %{memory: mem, pc: pc}) do #WIP
-    :binary.at(mem, pc)
-    |> decode_form
+    :binary.at(mem, pc) |> decode_form
   end
 
   def decode_form(op) when op in 0x00..0x1f, do: {:op2, {:sc, :sc}}
@@ -29,4 +28,16 @@ defmodule Xyzzy.Machine.Decoding do
   def decode_form(op) when op in 0xb0..0xbf, do: {:op1, {:o}}
   def decode_form(op) when op in 0xc0..0xdf, do: {:op2, {:nb}}
   def decode_form(op) when op in 0xe0..0xff, do: {:var, {:nb}}
+
+  # For decoding VAR and EXT type bytes.
+  def decode_nb(typebyte) do
+    for << x :: 2 <- <<typebyte>> >> do
+      case x do
+        0 -> :lc
+        1 -> :sc
+        2 -> :v
+        3 -> :o
+      end
+    end
+  end
 end
