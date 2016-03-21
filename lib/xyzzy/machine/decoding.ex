@@ -48,4 +48,10 @@ defmodule Xyzzy.Machine.Decoding do
     end
   end
 
+  def decode_routine_locals(routine, %{memory: mem, version: ver})
+  when ver in 1..4 do
+    local_num = :binary.at(mem, routine)
+    locals = :binary.part(mem, {routine+1, 2*local_num})
+    for << x :: 16 <- locals >>, do: x
+  end
 end

@@ -33,6 +33,6 @@ defmodule Xyzzy.Machine do
       :memory => story,
       :stack => [],
       :call_stack => [],
-      :locals => {}}
+      :locals => %{}}
   end
 end
