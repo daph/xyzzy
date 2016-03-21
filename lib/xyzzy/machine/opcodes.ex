@@ -15,6 +15,6 @@ defmodule Xyzzy.Machine.Opcodes do
       :stack => [],
       :pc => (routine + 1 + (2 * map_size(new_locals))),
       :call_stack => [%{:pc => state.pc, :locals => state.locals,
-                        :stack => state.stack, :ret => ret}]}
+                        :stack => state.stack, :ret => ret}|state.call_stack]}
   end
 end
