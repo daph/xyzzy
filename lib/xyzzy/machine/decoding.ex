@@ -14,6 +14,11 @@ defmodule Xyzzy.Machine.Decoding do
   def unpack(address, 8), do: {:ok, 8 * address}
   def unpack(_address, _version), do: {:error, :version_not_supported}
 
+  def unpack!(address, version) do
+    {:ok, addr} = unpack(address, version)
+    addr
+  end
+
   # decode_opcode/1 takes in the current state, and returns the information
   # on what opcode it is, it's arguments, and the address after its end.
   def decode_opcode(state = %{memory: mem, pc: pc}) do #WIP

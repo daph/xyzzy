@@ -2,7 +2,7 @@ defmodule Xyzzy.Machine.Opcodes do
   import Xyzzy.Machine.Decoding
 
   def op_call(state, ret, [r|rargs]) when r != 0 do
-    routine = unpack(r, state.version)
+    routine = unpack!(r, state.version)
     new_locals =
       routine
       |> decode_routine_locals(state)
