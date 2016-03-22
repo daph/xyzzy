@@ -1,6 +1,6 @@
 defmodule Xyzzy.Machine.Decoding do
 
-  @operand_sizes %{:sc => 8, :lc => 16, :v => 8, :o => 0}
+  @operand_sizes %{:sc => 1, :lc => 2, :v => 1, :o => 0}
 
   # unpack/2 will unpack packed addresses for versions 1-5, and 8.
   # Versions 6 and 7 require a different formula, where there are
@@ -16,12 +16,35 @@ defmodule Xyzzy.Machine.Decoding do
 
   # decode_opcode/1 takes in the current state, and returns the information
   # on what opcode it is, it's arguments, and the address after its end.
-  def decode_opcode(_state = %{memory: mem, pc: pc}) do #WIP
-    form =
+  def decode_opcode(state = %{memory: mem, pc: pc}) do #WIP
+    operands =
       case mem |> :binary.at(pc) |> decode_form do
-        {_, [:nb]} -> mem |> :binary.at(pc+1) |> decode_nb
-        {_, f} -> f
+        {_, [:nb]} ->
+          mem
+          |> :binary.at(pc+1)
+          |> decode_nb
+          |> get_operands(%{state | :pc => pc+1})
+        {_, f} -> get_operands(f, state)
       end
+  end
+
+  defp get_operands(op_types, %{memory: mem, pc: pc}) do
+    len = Enum.reduce(op_types, 0, fn(x, acc) ->
+      acc + Map.fetch!(@operand_sizes, x)
+    end)
+    mem
+    |> :binary.part({pc+1, len})
+    |> get_operands(op_types, [])
+    |> Enum.reverse
+  end
+
+  defp get_operands(_, [], acc), do: acc
+  defp get_operands(_, [:o|_], acc), do: acc
+  defp get_operands(<<>>, _, acc), do: acc
+  defp get_operands(bin, [h|t], acc) do
+    s = Map.fetch!(@operand_sizes, h) * 8
+    << x :: size(s), rest :: binary >> = bin
+    get_operands(rest, t, [x|acc])
   end
 
   defp decode_form(op) when op in 0x00..0x1f, do: {:op2, [:sc, :sc]}
