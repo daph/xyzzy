@@ -1,4 +1,7 @@
 defmodule Xyzzy.Machine do
+  import Xyzzy.Machine.Decoding
+  import Xyzzy.Machine.Opcodes
+
   def open_story(file) do
     case File.read(file) do
       {:ok, story} -> initalize_machine(story)
@@ -34,5 +37,10 @@ defmodule Xyzzy.Machine do
       :stack => [],
       :call_stack => [],
       :locals => %{}}
+  end
+
+  def run_story(state = %{memory: mem, pc: pc}) do
+    {operands, op_types, end_addr} = decode_opcode(state)
+    mem |> :binary.at(pc) |> opcode(state, end_addr, operands)
   end
 end

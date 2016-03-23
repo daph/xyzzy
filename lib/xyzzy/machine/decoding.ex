@@ -21,15 +21,14 @@ defmodule Xyzzy.Machine.Decoding do
 
   # decode_opcode/1 takes in the current state, and returns the information
   # on what opcode it is, it's arguments, and the address after its end.
-  def decode_opcode(state = %{memory: mem, pc: pc}) do #WIP
-    {operands, end_addr} =
+  def decode_opcode(state = %{memory: mem, pc: pc}) do
       case mem |> :binary.at(pc) |> decode_form do
         {_, [:nb]} ->
           mem
           |> :binary.at(pc+1)
           |> decode_nb
-          |> get_operands_and_end_address(%{state | :pc => pc+1})
-        {_, f} -> get_operands_and_end_address(f, state)
+          |> get_op_info(%{state | :pc => pc+1})
+        {_, f} -> get_op_info(f, state)
       end
   end
 
@@ -39,10 +38,12 @@ defmodule Xyzzy.Machine.Decoding do
     end)
   end
 
-  defp get_operands_and_end_address(op_types, state) do
+  # Gets all the info needed for a good, strong opcode to run.
+  defp get_op_info(op_types, state) do
     end_addr = get_end_address(op_types, state)
-    operands = get_operands(op_types, state)
-    {operands, end_addr}
+    raw_operands = get_raw_operands(op_types, state)
+
+    {raw_operands, op_types, end_addr}
   end
 
   # Gets the address after all the operands. This is sometimes the variable to
@@ -52,21 +53,25 @@ defmodule Xyzzy.Machine.Decoding do
     pc+len+1
   end
 
-  defp get_operands(op_types, %{memory: mem, pc: pc}) do
+  defp get_operands(op_types, raw_operands, state) do
+  end
+
+  defp get_raw_operands(op_types, %{memory: mem, pc: pc}) do
     len = get_oplen(op_types)
     mem
     |> :binary.part({pc+1, len})
-    |> get_operands(op_types, [])
+    |> get_raw_operands(op_types, [])
+    |> IO.inspect
     |> Enum.reverse
   end
 
-  defp get_operands(_, [], acc), do: acc
-  defp get_operands(_, [:o|_], acc), do: acc
-  defp get_operands(<<>>, _, acc), do: acc
-  defp get_operands(bin, [h|t], acc) do
+  defp get_raw_operands(_, [], acc), do: acc
+  defp get_raw_operands(_, [:o|_], acc), do: acc
+  defp get_raw_operands(<<>>, _, acc), do: acc
+  defp get_raw_operands(bin, [h|t], acc) do
     s = Map.fetch!(@operand_sizes, h) * 8
     << x :: size(s), rest :: binary >> = bin
-    get_operands(rest, t, [x|acc])
+    get_raw_operands(rest, t, [x|acc])
   end
 
   defp decode_form(op) when op in 0x00..0x1f, do: {:op2, [:sc, :sc]}

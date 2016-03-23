@@ -1,7 +1,8 @@
 defmodule Xyzzy.Machine.Opcodes do
   import Xyzzy.Machine.Decoding
 
-  def op_call(state, ret, [r|rargs]) when r != 0 do
+  # op-call
+  def opcode(0xe0, state, ret, [r|rargs]) when r != 0 do
     routine = unpack!(r, state.version)
     new_locals =
       routine
@@ -9,6 +10,7 @@ defmodule Xyzzy.Machine.Opcodes do
       |> Enum.drop(length(rargs))
       |> (&(Enum.concat(rargs, &1))).()
       |> (&(Enum.zip(1..length(&1), &1))).()
+      |> Enum.into(%{})
 
     %{state |
       :locals => new_locals,
