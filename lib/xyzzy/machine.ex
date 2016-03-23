@@ -39,8 +39,11 @@ defmodule Xyzzy.Machine do
       :locals => %{}}
   end
 
-  def run_story(state = %{memory: mem, pc: pc}) do
+  def run_story(state_pid) do
+    state = Xyzzy.Machine.StateServer.get_state(state_pid)
     {operands, op_types, end_addr} = decode_opcode(state)
-    mem |> :binary.at(pc) |> opcode(state, end_addr, operands)
+    state.memory
+    |> :binary.at(state.pc)
+    |> opcode(state_pid, end_addr, operands)
   end
 end

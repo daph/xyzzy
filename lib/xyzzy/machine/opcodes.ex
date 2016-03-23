@@ -1,8 +1,10 @@
 defmodule Xyzzy.Machine.Opcodes do
   import Xyzzy.Machine.Decoding
+  alias Xyzzy.Machine.StateServer, as: StateServer
 
   # op-call
-  def opcode(0xe0, state, ret, [r|rargs]) when r != 0 do
+  def opcode(0xe0, state_pid, ret, [r|rargs]) when r != 0 do
+    state = StateServer.get_state(state_pid)
     routine = unpack!(r, state.version)
     new_locals =
       routine
@@ -12,11 +14,9 @@ defmodule Xyzzy.Machine.Opcodes do
       |> (&(Enum.zip(1..length(&1), &1))).()
       |> Enum.into(%{})
 
-    %{state |
-      :locals => new_locals,
-      :stack => [],
-      :pc => (routine + 1 + (2 * map_size(new_locals))),
-      :call_stack => [%{:pc => state.pc, :locals => state.locals,
-                        :stack => state.stack, :ret => ret}|state.call_stack]}
+    StateServer.push_call_stack(state_pid, ret)
+    StateServer.set_pc(state_pid, (routine+1+(2*map_size(new_locals))))
+    StateServer.set_locals(state_pid, new_locals)
+    StateServer.clear_stack(state_pid)
   end
 end
