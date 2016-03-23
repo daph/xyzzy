@@ -22,21 +22,38 @@ defmodule Xyzzy.Machine.Decoding do
   # decode_opcode/1 takes in the current state, and returns the information
   # on what opcode it is, it's arguments, and the address after its end.
   def decode_opcode(state = %{memory: mem, pc: pc}) do #WIP
-    operands =
+    {operands, end_addr} =
       case mem |> :binary.at(pc) |> decode_form do
         {_, [:nb]} ->
           mem
           |> :binary.at(pc+1)
           |> decode_nb
-          |> get_operands(%{state | :pc => pc+1})
-        {_, f} -> get_operands(f, state)
+          |> get_operands_and_end_address(%{state | :pc => pc+1})
+        {_, f} -> get_operands_and_end_address(f, state)
       end
   end
 
-  defp get_operands(op_types, %{memory: mem, pc: pc}) do
-    len = Enum.reduce(op_types, 0, fn(x, acc) ->
+  defp get_oplen(op_types) do
+    Enum.reduce(op_types, 0, fn(x, acc) ->
       acc + Map.fetch!(@operand_sizes, x)
     end)
+  end
+
+  defp get_operands_and_end_address(op_types, state) do
+    end_addr = get_end_address(op_types, state)
+    operands = get_operands(op_types, state)
+    {operands, end_addr}
+  end
+
+  # Gets the address after all the operands. This is sometimes the variable to
+  # Store the return value, or just the next opcode.
+  defp get_end_address(op_types, %{pc: pc}) do
+    len = get_oplen(op_types)
+    pc+len+1
+  end
+
+  defp get_operands(op_types, %{memory: mem, pc: pc}) do
+    len = get_oplen(op_types)
     mem
     |> :binary.part({pc+1, len})
     |> get_operands(op_types, [])
