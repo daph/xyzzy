@@ -79,8 +79,32 @@ defmodule Xyzzy.Machine.StateServer do
     {:reply, :ok, new_state}
   end
 
+  def handle_call({:get_local, l}, _from, state = %{locals: locals}) do
+    case Map.get(locals, l) do
+      nil -> {:stop, "Local #{l} does not exist!"}
+      local -> {:reply, local, state}
+    end
+  end
+
+  def handle_call({:set_local, l, value}, _from, state = %{locals: locals}) do
+      new_locals = %{locals | l => value}
+      {:reply, :ok, %{state | :locals => new_locals}}
+  end
+
   def handle_call({:set_locals, value}, _from, state) do
     {:reply, :ok, %{state | :locals => value}}
+  end
+
+  def handle_call({:get_global, g}, _from, state = %{global_vars: gv}) do
+    case Map.get(gv, g) do
+      nil -> {:stop, "Global #{g} does not exist!"}
+      global -> {:reply, global, state}
+    end
+  end
+
+  def handle_call({:set_global, g, value}, _from, state = %{global_vars: gv}) do
+    new_globals = %{gv | g => value}
+    {:reply, :ok, %{state | :gloval_vars => new_globals}}
   end
 
   def handle_call({:set_pc, value}, _from, state) do

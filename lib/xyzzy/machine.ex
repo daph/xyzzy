@@ -16,13 +16,19 @@ defmodule Xyzzy.Machine do
                                     pc :: 16,
                                     dictionary :: 16,
                                     object_table :: 16,
-                                    global_vars :: 16,
+                                    global_start :: 16,
                                     static_mem :: 16,
                                     flags2 :: 16,
                                     _ :: 48,
                                     abbr_table :: 16,
                                     _ :: binary >>) do
-     %{:version => version,
+    # 478 = 2 * (0xff - 16). 0xff being the last global var
+    global_bin = :binary.part(story, {global_start, 478})
+    global_vars =
+      for << x :: 16 <- global_bin >> do x end
+      |> (&(Enum.zip(0x10..0xff, &1))).()
+      |> Enum.into(%{})
+    %{:version => version,
       :flags1 => flags1,
       :release => release,
       :high_mem => high_mem,

@@ -53,7 +53,16 @@ defmodule Xyzzy.Machine.Decoding do
     pc+len+1
   end
 
-  defp get_operands(op_types, raw_operands, state) do
+  def get_operands(op_types, raw_operands, state_pid) do
+    case :v in op_types do
+      true -> get_operands(op_types, raw_operands, [], state_pid)
+              |> Enum.reverse
+      false -> raw_operands
+    end
+  end
+
+  def get_operands([type|tt], [op|ot], acc, state_pid) when type != :v do
+    get_operands(tt, ot, [op|acc], state_pid)
   end
 
   defp get_raw_operands(op_types, %{memory: mem, pc: pc}) do
