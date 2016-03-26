@@ -1,4 +1,5 @@
 defmodule Xyzzy.Machine.Decoding do
+  alias Xyzzy.Machine.StateServer, as: StateServer
 
   @operand_sizes %{:sc => 1, :lc => 2, :v => 1, :o => 0}
 
@@ -61,8 +62,23 @@ defmodule Xyzzy.Machine.Decoding do
     end
   end
 
+  def get_operands([], [], acc, _state_pid), do: acc
+  def get_operands(_op_types, [], acc, _state_pid), do: acc
+  def get_operands([], _raw_operands, acc, _state_pid), do: acc
   def get_operands([type|tt], [op|ot], acc, state_pid) when type != :v do
     get_operands(tt, ot, [op|acc], state_pid)
+  end
+  def get_operands([_|tt], [op|ot], acc, state_pid) when op == 0x00 do
+    val = StateServer.pop_stack(state_pid)
+    get_operands(tt, ot, [val|acc], state_pid)
+  end
+  def get_operands([_|tt], [op|ot], acc, state_pid) when op in 0x01..0x0f do
+    val = StateServer.get_local(state_pid, op)
+    get_operands(tt, ot, [val|acc], state_pid)
+  end
+  def get_operands([_|tt], [op|ot], acc, state_pid) when op in 0x10..0xff do
+    val = StateServer.get_global(state_pid, op)
+    get_operands(tt, ot, [val|acc], state_pid)
   end
 
   defp get_raw_operands(op_types, %{memory: mem, pc: pc}) do
@@ -70,7 +86,6 @@ defmodule Xyzzy.Machine.Decoding do
     mem
     |> :binary.part({pc+1, len})
     |> get_raw_operands(op_types, [])
-    |> IO.inspect
     |> Enum.reverse
   end
 
@@ -112,5 +127,15 @@ defmodule Xyzzy.Machine.Decoding do
     local_num = :binary.at(mem, routine)
     locals = :binary.part(mem, {routine+1, 2*local_num})
     for << x :: 16 <- locals >>, do: x
+  end
+
+  def write_variable(var, val, state_pid) when var == 0x00 do
+    StateSever.push_stack(state_pid, val)
+  end
+  def write_variable(var, val, state_pid) when var in 0x01..0x0f do
+    StateServer.set_local(state_pid, var, val)
+  end
+  def write_variable(var, val, state_pid) when var in 0x10..0xff do
+    StateServer.set_global(state_pid, var, val)
   end
 end

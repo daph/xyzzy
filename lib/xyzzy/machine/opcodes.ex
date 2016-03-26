@@ -19,4 +19,24 @@ defmodule Xyzzy.Machine.Opcodes do
     StateServer.set_locals(state_pid, new_locals)
     StateServer.clear_stack(state_pid)
   end
+
+  # op-add
+  def opcode(op, state_pid, ret, args) when op in [0x54, 0x74] do
+    math_op(&+/2, ret, args, state_pid)
+  end
+
+  # op-sub
+  def opcode(op, state_pid, ret, args) when op in [0x55, 0x75] do
+    math_op(&-/2, ret, args, state_pid)
+  end
+
+  defp math_op(func, ret, [a1, a2], state_pid) do
+    val = func.(a1, a2)
+    %{memory: mem} = StateServer.get_state(state_pid)
+    mem
+    |> :binary.at(ret)
+    |> write_variable(val, state_pid)
+
+    StateServer.set_pc(state_pid, ret+1)
+  end
 end

@@ -27,10 +27,26 @@ defmodule Xyzzy.Machine.StateServer do
     GenServer.call(pid, {:push_call_stack, ret})
   end
 
+  def get_local(pid, l) do
+    GenServer.call(pid, {:get_local, l})
+  end
+
+  def set_local(pid, l, value) do
+    GenServer.call(pid, {:set_local, l, value})
+  end
+
   def set_locals(pid, value) do
     GenServer.call(pid, {:set_locals, value})
   end
 
+  def get_global(pid, g) do
+    GenServer.call(pid, {:get_global, g})
+  end
+
+  def set_global(pid, g, value) do
+    GenServer.call(pid, {:set_global, g, value})
+  end
+  
   def set_pc(pid, value) do
     GenServer.call(pid, {:set_pc, value})
   end
