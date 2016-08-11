@@ -1,10 +1,40 @@
 defmodule Xyzzy.Machine.Opcodes do
   import Xyzzy.Machine.Decoding
 
+  alias Xyzzy.Machine.State
   alias Xyzzy.Machine.StateServer
 
   # op-call
-  def opcode(0xe0, state_pid, ret, [r|rargs]) when r != 0 do
+  def opcode(0xe0, state_pid, ret, args = [r|rarg]) when r != 0 do
+   call(state_pid, ret, args)
+  end
+
+  # op-add
+  def opcode(op, state_pid, ret, args) when op in [0x54, 0x74] do
+    math_op(&+/2, ret, args, state_pid)
+  end
+
+  # op-sub
+  def opcode(op, state_pid, ret, args) when op in [0x55, 0x75] do
+    math_op(&-/2, ret, args, state_pid)
+  end
+
+  # op-mul
+  def opcode(op, state_pid, ret, args) when op in [0x56, 0x76] do
+    math_op(&*/2, ret, args, state_pid)
+  end
+
+  # op-div
+  def opcode(op, state_pid, ret, args) when op in [0x57, 0x77] do
+    math_op(&div/2, ret, args, state_pid)
+  end
+
+  # op-mul
+  def opcode(op, state_pid, ret, args) when op in [0x58, 0x78] do
+    math_op(&rem/2, ret, args, state_pid)
+  end
+
+  defp call(state_pid, ret, [r|rargs]) do
     state = StateServer.get_state(state_pid)
     routine = unpack!(r, state.version)
     new_locals =
@@ -21,19 +51,9 @@ defmodule Xyzzy.Machine.Opcodes do
     StateServer.clear_stack(state_pid)
   end
 
-  # op-add
-  def opcode(op, state_pid, ret, args) when op in [0x54, 0x74] do
-    math_op(&+/2, ret, args, state_pid)
-  end
-
-  # op-sub
-  def opcode(op, state_pid, ret, args) when op in [0x55, 0x75] do
-    math_op(&-/2, ret, args, state_pid)
-  end
-
   defp math_op(func, ret, [a1, a2], state_pid) do
     val = func.(a1, a2)
-    %{memory: mem} = StateServer.get_state(state_pid)
+    %State{memory: mem} = StateServer.get_state(state_pid)
     mem
     |> :binary.at(ret)
     |> write_variable(val, state_pid)
