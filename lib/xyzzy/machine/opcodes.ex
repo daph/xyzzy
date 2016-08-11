@@ -1,6 +1,7 @@
 defmodule Xyzzy.Machine.Opcodes do
   import Xyzzy.Machine.Decoding
-  alias Xyzzy.Machine.StateServer, as: StateServer
+
+  alias Xyzzy.Machine.StateServer
 
   # op-call
   def opcode(0xe0, state_pid, ret, [r|rargs]) when r != 0 do

@@ -2,6 +2,8 @@ defmodule Xyzzy.Machine do
   import Xyzzy.Machine.Decoding
   import Xyzzy.Machine.Opcodes
 
+  alias Xyzzy.Machine.State
+
   def open_story(file) do
     case File.read(file) do
       {:ok, story} -> initalize_machine(story)
@@ -28,7 +30,8 @@ defmodule Xyzzy.Machine do
       for << x :: 16 <- global_bin >> do x end
       |> (&(Enum.zip(0x10..0xff, &1))).()
       |> Enum.into(%{})
-    %{:version => version,
+    %State{
+      :version => version,
       :flags1 => flags1,
       :release => release,
       :high_mem => high_mem,

@@ -1,5 +1,6 @@
 defmodule Xyzzy.Machine.Decoding do
-  alias Xyzzy.Machine.StateServer, as: StateServer
+  alias Xyzzy.Machine.State
+  alias Xyzzy.Machine.StateServer
 
   @operand_sizes %{:sc => 1, :lc => 2, :v => 1, :o => 0}
 
@@ -22,7 +23,7 @@ defmodule Xyzzy.Machine.Decoding do
 
   # decode_opcode/1 takes in the current state, and returns the information
   # on what opcode it is, it's arguments, and the address after its end.
-  def decode_opcode(state = %{memory: mem, pc: pc}) do
+  def decode_opcode(state = %State{memory: mem, pc: pc}) do
       case mem |> :binary.at(pc) |> decode_form do
         {_, [:nb]} ->
           mem
@@ -49,7 +50,7 @@ defmodule Xyzzy.Machine.Decoding do
 
   # Gets the address after all the operands. This is sometimes the variable to
   # Store the return value, or just the next opcode.
-  defp get_end_address(op_types, %{pc: pc}) do
+  defp get_end_address(op_types, %State{pc: pc}) do
     len = get_oplen(op_types)
     pc+len+1
   end
@@ -81,7 +82,7 @@ defmodule Xyzzy.Machine.Decoding do
     get_operands(tt, ot, [val|acc], state_pid)
   end
 
-  defp get_raw_operands(op_types, %{memory: mem, pc: pc}) do
+  defp get_raw_operands(op_types, %State{memory: mem, pc: pc}) do
     len = get_oplen(op_types)
     mem
     |> :binary.part({pc+1, len})
@@ -122,7 +123,7 @@ defmodule Xyzzy.Machine.Decoding do
     end
   end
 
-  def decode_routine_locals(routine, %{memory: mem, version: ver})
+  def decode_routine_locals(routine, %State{memory: mem, version: ver})
   when ver in 1..4 do
     local_num = :binary.at(mem, routine)
     locals = :binary.part(mem, {routine+1, 2*local_num})

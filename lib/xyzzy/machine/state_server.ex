@@ -1,6 +1,8 @@
 defmodule Xyzzy.Machine.StateServer do
   use GenServer
 
+  alias Xyzzy.Machine.State
+
   ### Public Api ###
 
   def start_link(state, opts \\ []) do
@@ -67,18 +69,18 @@ defmodule Xyzzy.Machine.StateServer do
     {:ok, state}
   end
 
-  def handle_call(:pop_stack, _from, state = %{stack: [h|t]}) do
+  def handle_call(:pop_stack, _from, state = %State{stack: [h|t]}) do
     {:reply, h, %{state | :stack => t}}
   end
 
-  def handle_call(:top_stack, _from, state = %{stack: [h|_]}) do
+  def handle_call(:top_stack, _from, state = %State{stack: [h|_]}) do
     {:reply, h, state}
   end
 
   # This very well could be an async cast instead, but as this is the state
   # of a machine, we need to keep everything in step with everything else in
   # order to prevent weird race conditions.
-  def handle_call({:push_stack, value}, _from, state = %{stack: stack}) do
+  def handle_call({:push_stack, value}, _from, state = %State{stack: stack}) do
     {:reply, :ok, %{state | :stack => [value|stack]}}
   end
 
@@ -95,14 +97,14 @@ defmodule Xyzzy.Machine.StateServer do
     {:reply, :ok, new_state}
   end
 
-  def handle_call({:get_local, l}, _from, state = %{locals: locals}) do
+  def handle_call({:get_local, l}, _from, state = %State{locals: locals}) do
     case Map.get(locals, l) do
       nil -> {:stop, "Local #{l} does not exist!"}
       local -> {:reply, local, state}
     end
   end
 
-  def handle_call({:set_local, l, value}, _from, state = %{locals: locals}) do
+  def handle_call({:set_local, l, value}, _from, state = %State{locals: locals}) do
       new_locals = %{locals | l => value}
       {:reply, :ok, %{state | :locals => new_locals}}
   end
@@ -111,14 +113,14 @@ defmodule Xyzzy.Machine.StateServer do
     {:reply, :ok, %{state | :locals => value}}
   end
 
-  def handle_call({:get_global, g}, _from, state = %{global_vars: gv}) do
+  def handle_call({:get_global, g}, _from, state = %State{global_vars: gv}) do
     case Map.get(gv, g) do
       nil -> {:stop, "Global #{g} does not exist!"}
       global -> {:reply, global, state}
     end
   end
 
-  def handle_call({:set_global, g, value}, _from, state = %{global_vars: gv}) do
+  def handle_call({:set_global, g, value}, _from, state = %State{global_vars: gv}) do
     new_globals = %{gv | g => value}
     {:reply, :ok, %{state | :gloval_vars => new_globals}}
   end
