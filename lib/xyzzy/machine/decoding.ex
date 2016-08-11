@@ -139,4 +139,20 @@ defmodule Xyzzy.Machine.Decoding do
   def write_variable(var, val, state_pid) when var in 0x10..0xff do
     StateServer.set_global(state_pid, var, val)
   end
+
+  # Only make signed if the num is large enough to have
+  # the sign bit flipped (>255). 2 bytes/16 bits.
+  # If we get a num larger than 65535, something has gone
+  # wrong and we should crash.
+  def make_signed(num) when num > 255 and num < 65536 do
+    bin_num = :binary.encode_unsigned(num)
+    << x :: 1, _ :: bitstring >> = bin_num
+    if x == 1 do
+      65536 - num
+    else
+      num
+    end
+  end
+  def make_signed(num) when num <= 255, do: num
+
 end

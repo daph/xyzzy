@@ -5,7 +5,7 @@ defmodule Xyzzy.Machine.Opcodes do
   alias Xyzzy.Machine.StateServer
 
   # op-call
-  def opcode(0xe0, state_pid, ret, args = [r|rarg]) when r != 0 do
+  def opcode(0xe0, state_pid, ret, args = [r|_]) when r != 0 do
    call(state_pid, ret, args)
   end
 
@@ -52,7 +52,9 @@ defmodule Xyzzy.Machine.Opcodes do
   end
 
   defp math_op(func, ret, [a1, a2], state_pid) do
-    val = func.(a1, a2)
+    sa1 = make_signed(a1)
+    sa2 = make_signed(a2)
+    val = func.(sa1, sa2)
     %State{memory: mem} = StateServer.get_state(state_pid)
     mem
     |> :binary.at(ret)
