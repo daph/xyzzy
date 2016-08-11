@@ -130,7 +130,7 @@ defmodule Xyzzy.Machine.Decoding do
   end
 
   def write_variable(var, val, state_pid) when var == 0x00 do
-    StateSever.push_stack(state_pid, val)
+    StateServer.push_stack(state_pid, val)
   end
   def write_variable(var, val, state_pid) when var in 0x01..0x0f do
     StateServer.set_local(state_pid, var, val)

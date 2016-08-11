@@ -46,7 +46,7 @@ defmodule Xyzzy.Machine.StateServer do
   def set_global(pid, g, value) do
     GenServer.call(pid, {:set_global, g, value})
   end
-  
+
   def set_pc(pid, value) do
     GenServer.call(pid, {:set_pc, value})
   end
@@ -62,7 +62,7 @@ defmodule Xyzzy.Machine.StateServer do
   ### Private GenServer API ###
 
   def init(story) do
-    :random.seed(:os.timestamp)
+    :rand.seed(:exsplus, :os.timestamp)
     state = Xyzzy.Machine.open_story(story)
     {:ok, state}
   end
