@@ -2,40 +2,39 @@ defmodule Xyzzy.Machine.Opcodes do
   import Xyzzy.Machine.Decoding
 
   alias Xyzzy.Machine.State
-  alias Xyzzy.Machine.StateServer
 
   # op-call
-  def opcode(0xe0, state_pid, ret, args = [r|_]) when r != 0 do
-   call(state_pid, ret, args)
+  def opcode(0xe0, game_name, ret, args = [r|_]) when r != 0 do
+   call(game_name, ret, args)
   end
 
   # op-add
-  def opcode(op, state_pid, ret, args) when op in [0x54, 0x74] do
-    math_op(&+/2, ret, args, state_pid)
+  def opcode(op, game_name, ret, args) when op in [0x54, 0x74] do
+    math_op(&+/2, ret, args, game_name)
   end
 
   # op-sub
-  def opcode(op, state_pid, ret, args) when op in [0x55, 0x75] do
-    math_op(&-/2, ret, args, state_pid)
+  def opcode(op, game_name, ret, args) when op in [0x55, 0x75] do
+    math_op(&-/2, ret, args, game_name)
   end
 
   # op-mul
-  def opcode(op, state_pid, ret, args) when op in [0x56, 0x76] do
-    math_op(&*/2, ret, args, state_pid)
+  def opcode(op, game_name, ret, args) when op in [0x56, 0x76] do
+    math_op(&*/2, ret, args, game_name)
   end
 
   # op-div
-  def opcode(op, state_pid, ret, args) when op in [0x57, 0x77] do
-    math_op(&div/2, ret, args, state_pid)
+  def opcode(op, game_name, ret, args) when op in [0x57, 0x77] do
+    math_op(&div/2, ret, args, game_name)
   end
 
   # op-mul
-  def opcode(op, state_pid, ret, args) when op in [0x58, 0x78] do
-    math_op(&rem/2, ret, args, state_pid)
+  def opcode(op, game_name, ret, args) when op in [0x58, 0x78] do
+    math_op(&rem/2, ret, args, game_name)
   end
 
-  defp call(state_pid, ret, [r|rargs]) do
-    state = StateServer.get_state(state_pid)
+  defp call(game_name, ret, [r|rargs]) do
+    state = State.Server.get_state(game_name)
     routine = unpack!(r, state.version)
     new_locals =
       routine
@@ -45,21 +44,21 @@ defmodule Xyzzy.Machine.Opcodes do
       |> (&(Enum.zip(1..length(&1), &1))).()
       |> Enum.into(%{})
 
-    StateServer.push_call_stack(state_pid, ret)
-    StateServer.set_pc(state_pid, (routine+1+(2*map_size(new_locals))))
-    StateServer.set_locals(state_pid, new_locals)
-    StateServer.clear_stack(state_pid)
+    State.Server.push_call_stack(game_name, ret)
+    State.Server.set_pc(game_name, (routine+1+(2*map_size(new_locals))))
+    State.Server.set_locals(game_name, new_locals)
+    State.Server.clear_stack(game_name)
   end
 
-  defp math_op(func, ret, [a1, a2], state_pid) do
+  defp math_op(func, ret, [a1, a2], game_name) do
     sa1 = make_signed(a1)
     sa2 = make_signed(a2)
     val = func.(sa1, sa2)
-    %State{memory: mem} = StateServer.get_state(state_pid)
+    %State{memory: mem} = State.Server.get_state(game_name)
     mem
     |> :binary.at(ret)
-    |> write_variable(val, state_pid)
+    |> write_variable(val, game_name)
 
-    StateServer.set_pc(state_pid, ret+1)
+    State.Server.set_pc(game_name, ret+1)
   end
 end

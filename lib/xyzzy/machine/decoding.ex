@@ -1,6 +1,5 @@
 defmodule Xyzzy.Machine.Decoding do
   alias Xyzzy.Machine.State
-  alias Xyzzy.Machine.StateServer
 
   @operand_sizes %{:sc => 1, :lc => 2, :v => 1, :o => 0}
 
@@ -55,31 +54,31 @@ defmodule Xyzzy.Machine.Decoding do
     pc+len+1
   end
 
-  def get_operands(op_types, raw_operands, state_pid) do
+  def get_operands(op_types, raw_operands, game_name) do
     case :v in op_types do
-      true -> get_operands(op_types, raw_operands, [], state_pid)
+      true -> get_operands(op_types, raw_operands, [], game_name)
               |> Enum.reverse
       false -> raw_operands
     end
   end
 
-  def get_operands([], [], acc, _state_pid), do: acc
-  def get_operands(_op_types, [], acc, _state_pid), do: acc
-  def get_operands([], _raw_operands, acc, _state_pid), do: acc
-  def get_operands([type|tt], [op|ot], acc, state_pid) when type != :v do
-    get_operands(tt, ot, [op|acc], state_pid)
+  def get_operands([], [], acc, _game_name), do: acc
+  def get_operands(_op_types, [], acc, _game_name), do: acc
+  def get_operands([], _raw_operands, acc, _game_name), do: acc
+  def get_operands([type|tt], [op|ot], acc, game_name) when type != :v do
+    get_operands(tt, ot, [op|acc], game_name)
   end
-  def get_operands([_|tt], [op|ot], acc, state_pid) when op == 0x00 do
-    val = StateServer.pop_stack(state_pid)
-    get_operands(tt, ot, [val|acc], state_pid)
+  def get_operands([_|tt], [op|ot], acc, game_name) when op == 0x00 do
+    val = State.Server.pop_stack(game_name)
+    get_operands(tt, ot, [val|acc], game_name)
   end
-  def get_operands([_|tt], [op|ot], acc, state_pid) when op in 0x01..0x0f do
-    val = StateServer.get_local(state_pid, op)
-    get_operands(tt, ot, [val|acc], state_pid)
+  def get_operands([_|tt], [op|ot], acc, game_name) when op in 0x01..0x0f do
+    val = State.Server.get_local(game_name, op)
+    get_operands(tt, ot, [val|acc], game_name)
   end
-  def get_operands([_|tt], [op|ot], acc, state_pid) when op in 0x10..0xff do
-    val = StateServer.get_global(state_pid, op)
-    get_operands(tt, ot, [val|acc], state_pid)
+  def get_operands([_|tt], [op|ot], acc, game_name) when op in 0x10..0xff do
+    val = State.Server.get_global(game_name, op)
+    get_operands(tt, ot, [val|acc], game_name)
   end
 
   defp get_raw_operands(op_types, %State{memory: mem, pc: pc}) do
@@ -130,14 +129,14 @@ defmodule Xyzzy.Machine.Decoding do
     for << x :: 16 <- locals >>, do: x
   end
 
-  def write_variable(var, val, state_pid) when var == 0x00 do
-    StateServer.push_stack(state_pid, val)
+  def write_variable(var, val, game_name) when var == 0x00 do
+    State.Server.push_stack(game_name, val)
   end
-  def write_variable(var, val, state_pid) when var in 0x01..0x0f do
-    StateServer.set_local(state_pid, var, val)
+  def write_variable(var, val, game_name) when var in 0x01..0x0f do
+    State.Server.set_local(game_name, var, val)
   end
-  def write_variable(var, val, state_pid) when var in 0x10..0xff do
-    StateServer.set_global(state_pid, var, val)
+  def write_variable(var, val, game_name) when var in 0x10..0xff do
+    State.Server.set_global(game_name, var, val)
   end
 
   # Only make signed if the num is large enough to have

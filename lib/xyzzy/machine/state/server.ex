@@ -1,64 +1,68 @@
-defmodule Xyzzy.Machine.StateServer do
+defmodule Xyzzy.Machine.State.Server do
   use GenServer
 
   alias Xyzzy.Machine.State
 
   ### Public Api ###
 
-  def start_link(state, opts \\ []) do
-    GenServer.start_link(__MODULE__, state, opts)
+  def start_link({story, name}) do
+    GenServer.start_link(__MODULE__, story, name: via_tuple(name))
   end
 
-  def pop_stack(pid) do
-    GenServer.call(pid, :pop_stack)
+  def via_tuple(game_name) do
+    {:via, State.Registry, game_name}
   end
 
-  def top_stack(pid) do
-    GenServer.call(pid, :top_stack)
+  def pop_stack(game_name) do
+    GenServer.call(via_tuple(game_name), :pop_stack)
   end
 
-  def push_stack(pid, value) do
-    GenServer.call(pid, {:push_stack, value})
+  def top_stack(game_name) do
+    GenServer.call(via_tuple(game_name), :top_stack)
   end
 
-  def clear_stack(pid) do
-    GenServer.call(pid, :clear_stack)
+  def push_stack(game_name, value) do
+    GenServer.call(via_tuple(game_name), {:push_stack, value})
   end
 
-  def push_call_stack(pid, ret) do
-    GenServer.call(pid, {:push_call_stack, ret})
+  def clear_stack(game_name) do
+    GenServer.call(via_tuple(game_name), :clear_stack)
   end
 
-  def get_local(pid, l) do
-    GenServer.call(pid, {:get_local, l})
+  def push_call_stack(game_name, ret) do
+    GenServer.call(via_tuple(game_name), {:push_call_stack, ret})
   end
 
-  def set_local(pid, l, value) do
-    GenServer.call(pid, {:set_local, l, value})
+  def get_local(game_name, l) do
+    GenServer.call(via_tuple(game_name), {:get_local, l})
   end
 
-  def set_locals(pid, value) do
-    GenServer.call(pid, {:set_locals, value})
+  def set_local(game_name, l, value) do
+    GenServer.call(via_tuple(game_name), {:set_local, l, value})
   end
 
-  def get_global(pid, g) do
-    GenServer.call(pid, {:get_global, g})
+  def set_locals(game_name, value) do
+    GenServer.call(via_tuple(game_name), {:set_locals, value})
   end
 
-  def set_global(pid, g, value) do
-    GenServer.call(pid, {:set_global, g, value})
+  def get_global(game_name, g) do
+    GenServer.call(via_tuple(game_name), {:get_global, g})
   end
 
-  def set_pc(pid, value) do
-    GenServer.call(pid, {:set_pc, value})
+  def set_global(game_name, g, value) do
+    GenServer.call(via_tuple(game_name), {:set_global, g, value})
   end
 
-  def bulk_update(pid, state) do
-    GenServer.call(pid, {:bulk_update, state})
+  def set_pc(game_name, value) do
+    GenServer.call(via_tuple(game_name), {:set_pc, value})
   end
 
-  def get_state(pid) do
-    GenServer.call(pid, :get_state)
+  def bulk_update(game_name, state) do
+    GenServer.call(via_tuple(game_name), {:bulk_update, state})
+  end
+
+  def get_state(game_name) do
+    GenServer.call(via_tuple(game_name), :get_state)
   end
 
   ### Private GenServer API ###
