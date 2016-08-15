@@ -22,16 +22,18 @@ defmodule Xyzzy.Machine.Decoding do
 
   # decode_opcode/1 takes in the current state, and returns the information
   # on what opcode it is, it's arguments, and the address after its end.
-  def decode_opcode(state = %State{memory: mem, pc: pc}) do
-      case mem |> :binary.at(pc) |> decode_form do
-        {_, [:nb]} ->
-          mem
-          |> :binary.at(pc+1)
-          |> decode_nb
-          |> get_op_info(%{state | :pc => pc+1})
-        {_, f} -> get_op_info(f, state)
-      end
+  def decode_opcode(game_name) do
+    state = %State{memory: mem, pc: pc} = State.Server.get_state(game_name)
+    case mem |> :binary.at(pc) |> decode_form do
+     {_, [:nb]} ->
+        mem
+        |> :binary.at(pc+1)
+        |> decode_nb
+        |> get_op_info(%{state | :pc => pc+1})
+      {_, f} -> get_op_info(f, state)
+    end
   end
+
 
   defp get_oplen(op_types) do
     Enum.reduce(op_types, 0, fn(x, acc) ->
