@@ -66,7 +66,7 @@ defmodule Xyzzy.Machine.Opcodes do
     label = :binary.at(mem, ret) |> :binary.encode_unsigned
     # First bit (tf), is if we jump if true (1) or false (0)
     # Second bit (l), is if the offset is one byte (1) or two (0)
-    # rest is the offset (or first half if `l` is set)
+    # rest is the offset (or first half if `l` is unset)
     << tf :: 1, l :: 1, rest :: 6 >> = label
 
     offset =
