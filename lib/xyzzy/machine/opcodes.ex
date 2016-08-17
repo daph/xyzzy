@@ -8,9 +8,13 @@ defmodule Xyzzy.Machine.Opcodes do
    call(game_name, ret, args)
   end
   # op-je
-#  def opcode(op, game_name, ret, args) when op in [0x41, 0x61, 0xc1] do
-    # jump_if
-#  end
+  def opcode(op, game_name, ret, args) when op in [0x41, 0x61, 0xc1] do
+    func =
+      fn [x|rest] ->
+        Enum.any?(rest, &(x == &1))
+      end
+    jump_cond(func, ret, args, game_name)
+  end
   # op-add
   def opcode(op, game_name, ret, args) when op in [0x54, 0x74] do
     math_op(&+/2, ret, args, game_name)
@@ -61,7 +65,7 @@ defmodule Xyzzy.Machine.Opcodes do
     State.Server.set_pc(game_name, ret+1)
   end
 
-  defp jump_if(func, ret, args, game_name) do
+  defp jump_cond(func, ret, args, game_name) do
     %State{memory: mem} = State.Server.get_state(game_name)
     label = :binary.at(mem, ret) |> :binary.encode_unsigned
     # First bit (tf), is if we jump if true (1) or false (0)
