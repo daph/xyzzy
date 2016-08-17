@@ -15,6 +15,18 @@ defmodule Xyzzy.Machine.Opcodes do
       end
     jump_cond(func, ret, args, game_name)
   end
+  # op-jl
+  def opcode(op, game_name, ret, args) when op in [0x42, 0x62, 0xc2] do
+    signed_args = Enum.map(args, &make_signed/1)
+    func = fn [a,b] -> a < b end
+    jump_cond(func, ret, signed_args, game_name)
+  end
+  # op-jg
+  def opcode(op, game_name, ret, args) when op in [0x43, 0x63, 0xc3] do
+    signed_args = Enum.map(args, &make_signed/1)
+    func = fn [a,b] -> a > b end
+    jump_cond(func, ret, signed_args, game_name)
+  end
   # op-add
   def opcode(op, game_name, ret, args) when op in [0x54, 0x74] do
     math_op(&+/2, ret, args, game_name)
@@ -31,7 +43,7 @@ defmodule Xyzzy.Machine.Opcodes do
   def opcode(op, game_name, ret, args) when op in [0x57, 0x77] do
     math_op(&div/2, ret, args, game_name)
   end
-  # op-mul
+  # op-mod
   def opcode(op, game_name, ret, args) when op in [0x58, 0x78] do
     math_op(&rem/2, ret, args, game_name)
   end
