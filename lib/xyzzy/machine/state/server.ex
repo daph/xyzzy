@@ -126,7 +126,7 @@ defmodule Xyzzy.Machine.State.Server do
 
   def handle_call({:set_global, g, value}, _from, state = %State{global_vars: gv}) do
     new_globals = %{gv | g => value}
-    {:reply, :ok, %{state | :gloval_vars => new_globals}}
+    {:reply, :ok, %{state | :global_vars => new_globals}}
   end
 
   def handle_call({:set_pc, value}, _from, state) do
