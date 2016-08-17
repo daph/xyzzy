@@ -1,111 +1,53 @@
 defmodule Xyzzy.Machine.Opcodes do
-  import Xyzzy.Machine.Decoding
+  import Xyzzy.Machine.OpFuncs
 
-  alias Xyzzy.Machine.State
+  alias Xyzzy.Machine.Opcode
 
-  # op-call
-  def opcode(0xe0, game_name, ret, args = [r|_]) when r != 0 do
-   call(game_name, ret, args)
-  end
-  # op-je
-  def opcode(op, game_name, ret, args) when op in [0x41, 0x61, 0xc1] do
-    func =
-      fn [x|rest] ->
-        Enum.any?(rest, &(x == &1))
-      end
-    jump_cond(func, ret, args, game_name)
-  end
-  # op-jl
-  def opcode(op, game_name, ret, args) when op in [0x42, 0x62, 0xc2] do
-    signed_args = Enum.map(args, &make_signed/1)
-    func = fn [a,b] -> a < b end
-    jump_cond(func, ret, signed_args, game_name)
-  end
-  # op-jg
-  def opcode(op, game_name, ret, args) when op in [0x43, 0x63, 0xc3] do
-    signed_args = Enum.map(args, &make_signed/1)
-    func = fn [a,b] -> a > b end
-    jump_cond(func, ret, signed_args, game_name)
-  end
-  # op-add
-  def opcode(op, game_name, ret, args) when op in [0x54, 0x74] do
-    math_op(&+/2, ret, args, game_name)
-  end
-  # op-sub
-  def opcode(op, game_name, ret, args) when op in [0x55, 0x75] do
-    math_op(&-/2, ret, args, game_name)
-  end
-  # op-mul
-  def opcode(op, game_name, ret, args) when op in [0x56, 0x76] do
-    math_op(&*/2, ret, args, game_name)
-  end
-  # op-div
-  def opcode(op, game_name, ret, args) when op in [0x57, 0x77] do
-    math_op(&div/2, ret, args, game_name)
-  end
-  # op-mod
-  def opcode(op, game_name, ret, args) when op in [0x58, 0x78] do
-    math_op(&rem/2, ret, args, game_name)
-  end
+  @opmap %{
+    # Long Form - 2OP - Small Constant, Small Constant
+    0x01 => %Opcode{func: &op_je/2, indirect?: false, branch?: true},
+    0x02 => %Opcode{func: &op_jl/2, indirect?: false, branch?: true},
+    0x03 => %Opcode{func: &op_jg/2, indirect?: false, branch?: true},
+    0x14 => %Opcode{func: &op_add/2, indirect?: false, branch?: false},
+    0x15 => %Opcode{func: &op_sub/2, indirect?: false, branch?: false},
+    0x16 => %Opcode{func: &op_mul/2, indirect?: false, branch?: false},
+    0x17 => %Opcode{func: &op_div/2, indirect?: false, branch?: false},
+    0x18 => %Opcode{func: &op_mod/2, indirect?: false, branch?: false},
 
-  defp call(game_name, ret, [r|rargs]) do
-    state = State.Server.get_state(game_name)
-    routine = unpack!(r, state.version)
-    new_locals =
-      routine
-      |> decode_routine_locals(state)
-      |> Enum.drop(length(rargs))
-      |> (&(Enum.concat(rargs, &1))).()
-      |> (&(Enum.zip(1..length(&1), &1))).()
-      |> Enum.into(%{})
+    # Long Form - 2OP - Small Constant, Variable
+    0x21 => %Opcode{func: &op_je/2, indirect?: false, branch?: true},
+    0x22 => %Opcode{func: &op_jl/2, indirect?: false, branch?: true},
+    0x23 => %Opcode{func: &op_jg/2, indirect?: false, branch?: true},
+    0x34 => %Opcode{func: &op_add/2, indirect?: false, branch?: false},
+    0x35 => %Opcode{func: &op_sub/2, indirect?: false, branch?: false},
+    0x36 => %Opcode{func: &op_mul/2, indirect?: false, branch?: false},
+    0x37 => %Opcode{func: &op_div/2, indirect?: false, branch?: false},
+    0x38 => %Opcode{func: &op_mod/2, indirect?: false, branch?: false},
 
-    State.Server.push_call_stack(game_name, ret)
-    State.Server.set_pc(game_name, (routine+1+(2*map_size(new_locals))))
-    State.Server.set_locals(game_name, new_locals)
-    State.Server.clear_stack(game_name)
-  end
+    # Long Form - 2OP - Variable, Small Constant
+    0x41 => %Opcode{func: &op_je/2, indirect?: false, branch?: true},
+    0x42 => %Opcode{func: &op_jl/2, indirect?: false, branch?: true},
+    0x43 => %Opcode{func: &op_jg/2, indirect?: false, branch?: true},
+    0x54 => %Opcode{func: &op_add/2, indirect?: false, branch?: false},
+    0x55 => %Opcode{func: &op_sub/2, indirect?: false, branch?: false},
+    0x56 => %Opcode{func: &op_mul/2, indirect?: false, branch?: false},
+    0x57 => %Opcode{func: &op_div/2, indirect?: false, branch?: false},
+    0x58 => %Opcode{func: &op_mod/2, indirect?: false, branch?: false},
 
-  defp math_op(func, ret, [a1, a2], game_name) do
-    sa1 = make_signed(a1)
-    sa2 = make_signed(a2)
-    val = func.(sa1, sa2)
-    %State{memory: mem} = State.Server.get_state(game_name)
-    mem
-    |> :binary.at(ret)
-    |> write_variable(val, game_name)
+    # Long Form - 2OP - Variable, Variable
+    0x61 => %Opcode{func: &op_je/2, indirect?: false, branch?: true},
+    0x62 => %Opcode{func: &op_jl/2, indirect?: false, branch?: true},
+    0x63 => %Opcode{func: &op_jg/2, indirect?: false, branch?: true},
+    0x74 => %Opcode{func: &op_add/2, indirect?: false, branch?: false},
+    0x75 => %Opcode{func: &op_sub/2, indirect?: false, branch?: false},
+    0x76 => %Opcode{func: &op_mul/2, indirect?: false, branch?: false},
+    0x77 => %Opcode{func: &op_div/2, indirect?: false, branch?: false},
+    0x78 => %Opcode{func: &op_mod/2, indirect?: false, branch?: false},
 
-    State.Server.set_pc(game_name, ret+1)
-  end
+    # Variable Form - VAR - Operand types in next byte(s)
+    0xe0 => %Opcode{func: &op_call/2, indirect? false, branch?: false},
+  }
 
-  defp jump_cond(func, ret, args, game_name) do
-    %State{memory: mem} = State.Server.get_state(game_name)
-    label = :binary.at(mem, ret) |> :binary.encode_unsigned
-    # First bit (tf), is if we jump if true (1) or false (0)
-    # Second bit (l), is if the offset is one byte (1) or two (0)
-    # rest is the offset (or first half if `l` is unset)
-    << tf :: 1, l :: 1, rest :: 6 >> = label
+  def opmap, do: @opmap
 
-    offset =
-      case l do
-        1 ->
-          State.Server.set_pc(game_name, ret)
-          rest
-        0 ->
-          State.Server.set_pc(game_name, ret+1)
-          rest + :binary.at(mem, ret+1)
-      end
-
-    jmp_cond =
-      case tf do
-        1 -> true
-        0 -> false
-      end
-
-    %State{pc: pc} = State.Server.get_state(game_name)
-    if func.(args) == jmp_cond do
-      State.Server.set_pc(game_name, pc+offset-1)
-    else
-      State.Server.set_pc(game_name, pc+1)
-    end
-  end
 end
