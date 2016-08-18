@@ -1,5 +1,6 @@
 defmodule Xyzzy.Machine.Opcodes do
   import Xyzzy.Machine.OpFuncs
+  import Xyzzy.Machine.Decoding
 
   alias Xyzzy.Machine.Opcode
 
@@ -45,9 +46,12 @@ defmodule Xyzzy.Machine.Opcodes do
     0x78 => %Opcode{func: &op_mod/2, indirect?: false, branch?: false},
 
     # Variable Form - VAR - Operand types in next byte(s)
-    0xe0 => %Opcode{func: &op_call/2, indirect? false, branch?: false},
+    0xe0 => %Opcode{func: &op_call/2, indirect?: false, branch?: false},
   }
 
-  def opmap, do: @opmap
+  def get(op) do
+    opcode = Map.get(@opmap, op)
+    %{opcode | :form => decode_form(op)}
+  end
 
 end

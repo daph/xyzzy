@@ -1,6 +1,5 @@
 defmodule Xyzzy.Machine do
   import Xyzzy.Machine.Decoding
-  import Xyzzy.Machine.Opcodes
 
   alias Xyzzy.Machine.State
 
@@ -49,11 +48,7 @@ defmodule Xyzzy.Machine do
   end
 
   def run_story(game_name) do
-    state = Xyzzy.Machine.State.Server.get_state(game_name)
-    {raw_operands, op_types, end_addr} = decode_opcode(game_name)
-    operands = get_operands(op_types, raw_operands, game_name)
-    state.memory
-    |> :binary.at(state.pc)
-    |> opcode(game_name, end_addr, operands)
+    {opcode, opinfo} = get_opcode(game_name)
+    opcode.func.(game_name, opinfo)
   end
 end

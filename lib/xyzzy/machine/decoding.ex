@@ -1,5 +1,7 @@
 defmodule Xyzzy.Machine.Decoding do
   alias Xyzzy.Machine.State
+  alias Xyzzy.Machine.Opcodes
+  alias Xyzzy.Machine.OpInfo
 
   @operand_sizes %{:sc => 1, :lc => 2, :v => 1, :o => 0}
 
@@ -20,20 +22,20 @@ defmodule Xyzzy.Machine.Decoding do
     addr
   end
 
-  # decode_opcode/1 takes in the current state, and returns the information
-  # on what opcode it is, it's arguments, and the address after its end.
-  def decode_opcode(game_name) do
-    state = %State{memory: mem, pc: pc} = State.Server.get_state(game_name)
-    case mem |> :binary.at(pc) |> decode_form do
-     {_, [:nb]} ->
-        mem
-        |> :binary.at(pc+1)
+  def get_opcode(game_name) do
+    state = State.Server.get_state(game_name)
+    opcode = Opcodes.get(state.pc)
+
+    case opcode.form do
+      {_, [:nb]} ->
+        state.mem
+        |> :binary.at(state.pc+1)
         |> decode_nb
-        |> get_op_info(%{state | :pc => pc+1})
-      {_, f} -> get_op_info(f, state)
+        |> get_op_info(opcode, state.pc+1, game_name)
+      {_, f} ->
+        get_op_info(f, opcode, state.pc, game_name)
     end
   end
-
 
   defp get_oplen(op_types) do
     Enum.reduce(op_types, 0, fn(x, acc) ->
@@ -42,18 +44,61 @@ defmodule Xyzzy.Machine.Decoding do
   end
 
   # Gets all the info needed for a good, strong opcode to run.
-  defp get_op_info(op_types, state) do
-    end_addr = get_end_address(op_types, state)
-    raw_operands = get_raw_operands(op_types, state)
+  defp get_op_info(op_types, opcode, start_addr, game_name) do
+    state = State.Server.get_state(game_name)
+    end_addr = get_end_address(op_types, start_addr)
+    raw_operands = get_raw_operands(op_types, state.memory, start_addr)
 
-    {raw_operands, op_types, end_addr}
+    operands =
+      if opcode.indirect? do
+        raw_operands
+      else
+        get_operands(op_types, raw_operands, game_name)
+      end
+      partial_info =
+        %OpInfo{:operands => operands,
+                :operand_types => op_types}
+
+      if opcode.branch? do
+        {branch_cond, branch_addr, npc} = get_branch_info(end_addr, state.memory)
+        %{partial_info | :branch_addr => branch_addr,
+                         :branch_cond => branch_cond,
+                         :next_pc => npc}
+      else
+        %{partial_info | :return_store => :binary.at(state.memory, end_addr),
+                         :next_pc => end_addr+1}
+      end
+  end
+
+  defp get_branch_info(end_addr, mem) do
+    label = :binary.at(mem, end_addr) |> :binary.encode_unsigned
+    # First bit (tf), is if we jump if true (1) or false (0)
+    # Second bit (l), is if the offset is one byte (1) or two (0)
+    # rest is the offset (or first half if `l` is unset)
+    << tf :: 1, l :: 1, rest :: 6 >> = label
+
+    {offset, npc} =
+      case l do
+        1 ->
+          {rest, end_addr+1}
+        0 ->
+          {rest + :binary.at(mem, end_addr+1), end_addr+2}
+      end
+
+    branch_cond =
+      case tf do
+        1 -> true
+        0 -> false
+      end
+
+    {branch_cond, offset+npc-2, npc}
   end
 
   # Gets the address after all the operands. This is sometimes the variable to
   # Store the return value, or just the next opcode.
-  defp get_end_address(op_types, %State{pc: pc}) do
+  defp get_end_address(op_types, start_addr) do
     len = get_oplen(op_types)
-    pc+len+1
+    start_addr+len+1
   end
 
   def get_operands(op_types, raw_operands, game_name) do
@@ -83,10 +128,10 @@ defmodule Xyzzy.Machine.Decoding do
     get_operands(tt, ot, [val|acc], game_name)
   end
 
-  defp get_raw_operands(op_types, %State{memory: mem, pc: pc}) do
+  defp get_raw_operands(op_types, mem, start_addr) do
     len = get_oplen(op_types)
     mem
-    |> :binary.part({pc+1, len})
+    |> :binary.part({start_addr+1, len})
     |> get_raw_operands(op_types, [])
     |> Enum.reverse
   end

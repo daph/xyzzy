@@ -92,12 +92,12 @@ defmodule Xyzzy.Machine.State.Server do
     {:reply, :ok, %{state | :stack => []}}
   end
 
-  def handle_call({:push_call_stack, ret}, _from, state) do
+  def handle_call({:push_call_stack, pc, return_store}, _from, state) do
     new_state =
-      %{state | :call_stack => [%{:pc => state.pc,
+      %{state | :call_stack => [%{:pc => pc,
                                   :locals => state.locals,
                                   :stack => state.stack,
-                                  :ret => ret}|state.call_stack]}
+                                  :return_store => return_store}|state.call_stack]}
     {:reply, :ok, new_state}
   end
 
