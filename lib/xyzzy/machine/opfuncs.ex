@@ -1,4 +1,5 @@
 defmodule Xyzzy.Machine.OpFuncs do
+  import Bitwise
   import Xyzzy.Machine.Decoding
 
   alias Xyzzy.Machine.State

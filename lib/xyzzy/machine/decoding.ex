@@ -134,6 +134,22 @@ defmodule Xyzzy.Machine.Decoding do
     get_operands(tt, ot, [val|acc], game_name)
   end
 
+  # TODO: Dedup the work get_operands does by using read_variable
+  def read_variable(var, game_name, opts \\ [indirect: false])
+  def read_variable(var, game_name, opts) when var == 0x00 do
+    unless opts[:indirect] do
+      State.Server.pop_stack(game_name)
+    else
+      State.Server.top_stack(game_name)
+    end
+  end
+  def read_variable(var, game_name, _opts) when var in 0x01..0x0f do
+    State.Server.get_local(game_name, var)
+  end
+  def read_varialbe(var, game_name, _opts) when var in 0x10..0xff do
+    State.Server.get_global(game_name, var)
+  end
+
   def decode_form(op) when op in 0x00..0x1f, do: {:op2, [:sc, :sc]}
   def decode_form(op) when op in 0x20..0x3f, do: {:op2, [:sc, :v]}
   def decode_form(op) when op in 0x40..0x5f, do: {:op2, [:v, :sc]}
@@ -182,13 +198,18 @@ defmodule Xyzzy.Machine.Decoding do
     for << x :: 16 <- locals >>, do: x
   end
 
-  def write_variable(var, val, game_name) when var == 0x00 do
-    State.Server.push_stack(game_name, val)
+  def write_variable(var, val, game_name, opts \\ [indirect: false])
+  def write_variable(var, val, game_name, opts) when var == 0x00 do
+    unless opts[:indirect] do
+      State.Server.push_stack(game_name, val)
+    else
+      State.Server.set_top_stack(game_name, val)
+    end
   end
-  def write_variable(var, val, game_name) when var in 0x01..0x0f do
+  def write_variable(var, val, game_name, _opts) when var in 0x01..0x0f do
     State.Server.set_local(game_name, var, val)
   end
-  def write_variable(var, val, game_name) when var in 0x10..0xff do
+  def write_variable(var, val, game_name, _opts) when var in 0x10..0xff do
     State.Server.set_global(game_name, var, val)
   end
 

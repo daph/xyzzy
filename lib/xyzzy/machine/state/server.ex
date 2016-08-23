@@ -21,6 +21,10 @@ defmodule Xyzzy.Machine.State.Server do
     GenServer.call(via_tuple(game_name), :top_stack)
   end
 
+  def set_top_stack(game_name, value) do
+    GenServer.call(via_tuple(game_name), {:set_top_stack, value})
+  end
+
   def push_stack(game_name, value) do
     GenServer.call(via_tuple(game_name), {:push_stack, value})
   end
@@ -79,6 +83,10 @@ defmodule Xyzzy.Machine.State.Server do
 
   def handle_call(:top_stack, _from, state = %State{stack: [h|_]}) do
     {:reply, h, state}
+  end
+
+  def handle_call({:set_top_stack, value}, _from, state = %State{stack: [_|rest]}) do
+    {:replay, :ok, %{state | :stack => [value|rest]}}
   end
 
   # This very well could be an async cast instead, but as this is the state
