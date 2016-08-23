@@ -24,17 +24,23 @@ defmodule Xyzzy.Machine.Decoding do
 
   def get_opcode(game_name) do
     state = State.Server.get_state(game_name)
-    opcode = Opcodes.get(state.pc)
+    opcode =
+      state.memory
+      |> :binary.at(state.pc)
+      |> Opcodes.get
 
-    case opcode.form do
-      {_, [:nb]} ->
-        state.mem
-        |> :binary.at(state.pc+1)
-        |> decode_nb
-        |> get_op_info(opcode, state.pc+1, game_name)
-      {_, f} ->
-        get_op_info(f, opcode, state.pc, game_name)
-    end
+    opinfo =
+      case opcode.form do
+        {_, [:nb]} ->
+          state.memory
+          |> :binary.at(state.pc+1)
+          |> decode_nb
+          |> get_op_info(opcode, state.pc+1, game_name)
+        {_, f} ->
+          get_op_info(f, opcode, state.pc, game_name)
+      end
+
+    {opcode, opinfo}
   end
 
   defp get_oplen(op_types) do
@@ -128,7 +134,19 @@ defmodule Xyzzy.Machine.Decoding do
     get_operands(tt, ot, [val|acc], game_name)
   end
 
-  defp get_raw_operands(op_types, mem, start_addr) do
+  def decode_form(op) when op in 0x00..0x1f, do: {:op2, [:sc, :sc]}
+  def decode_form(op) when op in 0x20..0x3f, do: {:op2, [:sc, :v]}
+  def decode_form(op) when op in 0x40..0x5f, do: {:op2, [:v, :sc]}
+  def decode_form(op) when op in 0x60..0x7f, do: {:op2, [:v, :v]}
+  def decode_form(op) when op in 0x80..0x8f, do: {:op1, [:lc]}
+  def decode_form(op) when op in 0x90..0x9f, do: {:op1, [:sc]}
+  def decode_form(op) when op in 0xa0..0xaf, do: {:op1, [:v]}
+  def decode_form(op) when op == 0xbe, do: {:ext, [:nb]}
+  def decode_form(op) when op in 0xb0..0xbf, do: {:op1, [:o]}
+  def decode_form(op) when op in 0xc0..0xdf, do: {:op2, [:nb]}
+  def decode_form(op) when op in 0xe0..0xff, do: {:var, [:nb]}
+
+  defp get_raw_operands(op_types, mem, start_addr) when not is_list(start_addr) do
     len = get_oplen(op_types)
     mem
     |> :binary.part({start_addr+1, len})
@@ -144,18 +162,6 @@ defmodule Xyzzy.Machine.Decoding do
     << x :: size(s), rest :: binary >> = bin
     get_raw_operands(rest, t, [x|acc])
   end
-
-  defp decode_form(op) when op in 0x00..0x1f, do: {:op2, [:sc, :sc]}
-  defp decode_form(op) when op in 0x20..0x3f, do: {:op2, [:sc, :v]}
-  defp decode_form(op) when op in 0x40..0x5f, do: {:op2, [:v, :sc]}
-  defp decode_form(op) when op in 0x60..0x7f, do: {:op2, [:v, :v]}
-  defp decode_form(op) when op in 0x80..0x8f, do: {:op1, [:lc]}
-  defp decode_form(op) when op in 0x90..0x9f, do: {:op1, [:sc]}
-  defp decode_form(op) when op in 0xa0..0xaf, do: {:op1, [:v]}
-  defp decode_form(op) when op == 0xbe, do: {:ext, [:nb]}
-  defp decode_form(op) when op in 0xb0..0xbf, do: {:op1, [:o]}
-  defp decode_form(op) when op in 0xc0..0xdf, do: {:op2, [:nb]}
-  defp decode_form(op) when op in 0xe0..0xff, do: {:var, [:nb]}
 
   # For decoding VAR and EXT type bytes.
   defp decode_nb(typebyte) do

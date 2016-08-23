@@ -29,8 +29,8 @@ defmodule Xyzzy.Machine.State.Server do
     GenServer.call(via_tuple(game_name), :clear_stack)
   end
 
-  def push_call_stack(game_name, ret) do
-    GenServer.call(via_tuple(game_name), {:push_call_stack, ret})
+  def push_call_stack(game_name, pc, return_store) do
+    GenServer.call(via_tuple(game_name), {:push_call_stack, pc, return_store})
   end
 
   def get_local(game_name, l) do
