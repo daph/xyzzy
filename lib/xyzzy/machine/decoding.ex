@@ -146,7 +146,7 @@ defmodule Xyzzy.Machine.Decoding do
   def read_variable(var, game_name, _opts) when var in 0x01..0x0f do
     State.Server.get_local(game_name, var)
   end
-  def read_varialbe(var, game_name, _opts) when var in 0x10..0xff do
+  def read_variable(var, game_name, _opts) when var in 0x10..0xff do
     State.Server.get_global(game_name, var)
   end
 
@@ -200,17 +200,18 @@ defmodule Xyzzy.Machine.Decoding do
 
   def write_variable(var, val, game_name, opts \\ [indirect: false])
   def write_variable(var, val, game_name, opts) when var == 0x00 do
+    uval = make_unsigned(val)
     unless opts[:indirect] do
-      State.Server.push_stack(game_name, val)
+      State.Server.push_stack(game_name, uval)
     else
-      State.Server.set_top_stack(game_name, val)
+      State.Server.set_top_stack(game_name, uval)
     end
   end
   def write_variable(var, val, game_name, _opts) when var in 0x01..0x0f do
-    State.Server.set_local(game_name, var, val)
+    State.Server.set_local(game_name, var, make_unsigned(val))
   end
   def write_variable(var, val, game_name, _opts) when var in 0x10..0xff do
-    State.Server.set_global(game_name, var, val)
+    State.Server.set_global(game_name, var, make_unsigned(val))
   end
 
   # Only make signed if the num is large enough to have
@@ -219,13 +220,18 @@ defmodule Xyzzy.Machine.Decoding do
   # wrong and we should crash.
   def make_signed(num) when num > 255 and num < 65536 do
     bin_num = :binary.encode_unsigned(num)
-    << x :: 1, _ :: bitstring >> = bin_num
+    << x :: 1, n :: 15 >> = bin_num
     if x == 1 do
-      65536 - num
+      -n
     else
-      num
+      n
     end
   end
   def make_signed(num) when num <= 255, do: num
+
+  def make_unsigned(num) when num < 0 and num >= -32768 do
+    65536-num
+  end
+  def make_unsigned(num) when num >= 0, do: num
 
 end
