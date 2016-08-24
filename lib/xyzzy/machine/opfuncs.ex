@@ -25,6 +25,33 @@ defmodule Xyzzy.Machine.OpFuncs do
     jump_cond(func, %{info | operands: signed_args}, game_name)
   end
 
+  def op_dec_chk(game_name, info) do
+    [var, chk] = info.operands
+    [_, chk_type] = info.operand_types
+    var_val =
+      var
+      |> read_variable(game_name, indirect: true)
+      |> make_signed
+      |> Kernel.-(1)
+
+    write_variable(var, var_val, game_name, indirect: true)
+
+    chk_val =
+      if chk_type != :v do
+        make_signed(chk)
+      else
+        chk
+        |> read_variable(game_name, indirect: true)
+        |> make_signed
+      end
+
+    func =
+      fn [v, c] ->
+        v < c
+      end
+    jump_cond(func, %{info | operands: [var_val, chk_val]}, game_name)
+  end
+
   def op_add(game_name, info) do
     math_op(&+/2, info,  game_name)
   end
