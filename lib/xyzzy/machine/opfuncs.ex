@@ -1,5 +1,4 @@
 defmodule Xyzzy.Machine.OpFuncs do
-  import Bitwise
   import Xyzzy.Machine.Decoding
 
   alias Xyzzy.Machine.State
@@ -26,30 +25,11 @@ defmodule Xyzzy.Machine.OpFuncs do
   end
 
   def op_dec_chk(game_name, info) do
-    [var, chk] = info.operands
-    [_, chk_type] = info.operand_types
-    var_val =
-      var
-      |> read_variable(game_name, indirect: true)
-      |> make_signed
-      |> Kernel.-(1)
+    chk_op(game_name, info, &(&1-1), fn [v, c] -> v < c end)
+  end
 
-    write_variable(var, var_val, game_name, indirect: true)
-
-    chk_val =
-      if chk_type != :v do
-        make_signed(chk)
-      else
-        chk
-        |> read_variable(game_name, indirect: true)
-        |> make_signed
-      end
-
-    func =
-      fn [v, c] ->
-        v < c
-      end
-    jump_cond(func, %{info | operands: [var_val, chk_val]}, game_name)
+  def op_inc_chk(game_name, info) do
+    chk_op(game_name, info, &(&1+1), fn [v, c] -> v > c end)
   end
 
   def op_add(game_name, info) do
@@ -97,6 +77,20 @@ defmodule Xyzzy.Machine.OpFuncs do
     write_variable(info.return_store, val, game_name)
 
     State.Server.set_pc(game_name, info.next_pc)
+  end
+
+  defp chk_op(game_name, info, val_func, check_func) do
+    [var, chk] = info.operands
+    chk_val = make_signed(chk)
+    var_val =
+      var
+      |> read_variable(game_name, indirect: true)
+      |> make_signed
+      |> val_func.()
+
+    write_variable(var, var_val, game_name, indirect: true)
+
+    jump_cond(check_func, %{info | operands: [var_val, chk_val]}, game_name)
   end
 
   defp jump_cond(func, info, game_name) do
