@@ -86,7 +86,7 @@ defmodule Xyzzy.Machine.State.Server do
   end
 
   def handle_call({:set_top_stack, value}, _from, state = %State{stack: [_|rest]}) do
-    {:replay, :ok, %{state | :stack => [value|rest]}}
+    {:reply, :ok, %{state | :stack => [value|rest]}}
   end
 
   # This very well could be an async cast instead, but as this is the state
