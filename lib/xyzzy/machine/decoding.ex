@@ -106,33 +106,17 @@ defmodule Xyzzy.Machine.Decoding do
   end
 
   def get_operands(raw_operands, op_types, game_name) do
-    case :v in op_types do
-      true -> get_operands(op_types, raw_operands, [], game_name)
-              |> Enum.reverse
-      false -> raw_operands
-    end
+    raw_operands
+    |> Enum.zip(op_types)
+    |> Enum.map(fn {o, t} ->
+                  unless t == :v do
+                    o
+                  else
+                    read_variable(o, game_name)
+                  end
+                end)
   end
 
-  def get_operands([], [], acc, _game_name), do: acc
-  def get_operands(_op_types, [], acc, _game_name), do: acc
-  def get_operands([], _raw_operands, acc, _game_name), do: acc
-  def get_operands([type|tt], [op|ot], acc, game_name) when type != :v do
-    get_operands(tt, ot, [op|acc], game_name)
-  end
-  def get_operands([_|tt], [op|ot], acc, game_name) when op == 0x00 do
-    val = State.Server.pop_stack(game_name)
-    get_operands(tt, ot, [val|acc], game_name)
-  end
-  def get_operands([_|tt], [op|ot], acc, game_name) when op in 0x01..0x0f do
-    val = State.Server.get_local(game_name, op)
-    get_operands(tt, ot, [val|acc], game_name)
-  end
-  def get_operands([_|tt], [op|ot], acc, game_name) when op in 0x10..0xff do
-    val = State.Server.get_global(game_name, op)
-    get_operands(tt, ot, [val|acc], game_name)
-  end
-
-  # TODO: Dedup the work get_operands does by using read_variable
   def read_variable(var, game_name, opts \\ [indirect: false])
   def read_variable(var, game_name, opts) when var == 0x00 do
     unless opts[:indirect] do
