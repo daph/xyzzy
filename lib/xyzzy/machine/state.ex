@@ -9,9 +9,9 @@ defmodule Xyzzy.Machine.State do
             static_mem: 0,
             high_mem: 0,
             dictionary: 0,
-            object_table: 0,
+            object_table: %{},
             abbr_table: 0,
-            global_vars: 0,
+            global_vars: %{},
             flags1: 0,
             flags2: 0
 end

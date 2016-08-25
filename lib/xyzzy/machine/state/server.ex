@@ -125,16 +125,17 @@ defmodule Xyzzy.Machine.State.Server do
     {:reply, :ok, %{state | :locals => value}}
   end
 
-  def handle_call({:get_global, g}, _from, state = %State{global_vars: gv}) do
-    case Map.get(gv, g) do
-      nil -> {:stop, "Global #{g} does not exist!"}
-      global -> {:reply, global, state}
-    end
+  def handle_call({:get_global, g}, _from, state) do
+    val =
+      g
+      |> read_global(state)
+      |> :binary.decode_unsigned
+
+    {:reply, val, state}
   end
 
-  def handle_call({:set_global, g, value}, _from, state = %State{global_vars: gv}) do
-    new_globals = %{gv | g => value}
-    {:reply, :ok, %{state | :global_vars => new_globals}}
+  def handle_call({:set_global, g, value}, _from, state) do
+    {:reply, :ok, write_global(g, value, state)}
   end
 
   def handle_call({:set_pc, value}, _from, state) do
@@ -148,5 +149,22 @@ defmodule Xyzzy.Machine.State.Server do
 
   def handle_call(:get_state, _from, state) do
     {:reply, state, state}
+  end
+
+  ## Helper Functions ##
+
+  defp read_global(gvar, state) when gvar in 0x10..0xff do
+    state.memory
+    |> :binary.part({state.global_vars+((gvar-16)*2), 2})
+  end
+
+  defp write_global(gvar, val, state) when gvar in 0x10..0xff do
+    new_val = :binary.encode_unsigned(val)
+    old_val = read_global(gvar, state)
+    new_mem =
+      state.memory
+      |> :binary.replace(old_val, new_val, [{:scope, {state.global_vars+((gvar-16)*2), 2}}])
+
+    %{state | memory: new_mem}
   end
 end
