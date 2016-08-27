@@ -27,6 +27,6 @@ defmodule Xyzzy.Mixfile do
   #
   # Type "mix help deps" for more examples and options
   defp deps do
-    [{:credo, "~> 0.4", only: [:dev, :test]}]
+    []
   end
 end

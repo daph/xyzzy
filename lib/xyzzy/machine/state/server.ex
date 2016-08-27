@@ -73,8 +73,7 @@ defmodule Xyzzy.Machine.State.Server do
 
   def init(story) do
     :rand.seed(:exsplus, :os.timestamp)
-    state = Xyzzy.Machine.open_story(story)
-    {:ok, state}
+    {:ok, story}
   end
 
   def handle_call(:pop_stack, _from, state = %State{stack: [h|t]}) do
