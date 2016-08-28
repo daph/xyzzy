@@ -200,20 +200,14 @@ defmodule Xyzzy.Machine.Decoding do
   # the sign bit flipped (>255). 2 bytes/16 bits.
   # If we get a num larger than 65535, something has gone
   # wrong and we should crash.
-  def make_signed(num) when num > 255 and num < 65536 do
-    bin_num = :binary.encode_unsigned(num)
-    << x :: 1, n :: 15 >> = bin_num
-    if x == 1 do
-      -n
-    else
-      n
-    end
+  def make_signed(num) when num > 32767 do
+    num-65536
   end
-  def make_signed(num) when num <= 255, do: num
+  def make_signed(num), do: num
 
-  def make_unsigned(num) when num < 0 and num >= -32768 do
-    65536-num
-  end
   def make_unsigned(num) when num >= 0, do: num
+  def make_unsigned(num) when num < 0 and num >= -32768 do
+    65536-abs(num)
+  end
 
 end
