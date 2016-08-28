@@ -6,25 +6,38 @@ defmodule OpcodeTest do
   use ExUnit.Case
   doctest Xyzzy
 
-  setup do
+  setup_all do
     {:ok, _pid} = State.Registry.start_link
     {:ok, _pid} = State.Supervisor.start_link
+
     :ok
   end
 
-  test "op_add" do
-    info = %OpInfo{operands: [2, 2],
-                   next_pc: 0xBEEF,
-                   return_store: 0x02}
+  setup context do
+    state_name = "#{context[:test]}_test"
+    case context[:op_type] do
+      "math-op" ->
+        state = %State{locals: %{2 => 0}}
+        info = %OpInfo{operands: [65525, 5],
+                       next_pc: 0xBEEF,
+                       return_store: 0x02}
+        State.Supervisor.start_game(state, state_name)
+        on_exit fn -> State.Server.stop(state_name) end
+        {:ok, [state_name: state_name, info: info,
+               next_pc: 0xBEEF, result: 65530]}
 
-    state = %State{locals: %{2 => 0}}
-    State.Supervisor.start_game(state, "op_add_test")
+      _ -> {:ok, [state_name: state_name]}
 
-    OpFuncs.op_add("op_add_test", info)
+    end
+  end
 
-    state = State.Server.get_state("op_add_test")
+  @tag op_type: "math-op"
+  test "op_add", context do
+    OpFuncs.op_add(context[:state_name], context[:info])
 
-    assert state.pc == 0xBEEF
-    assert state.locals |> Map.get(2) == 4
+    state = State.Server.get_state(context[:state_name])
+
+    assert state.pc == context[:next_pc]
+    assert state.locals |> Map.get(2) == context[:result]
   end
 end

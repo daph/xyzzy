@@ -69,6 +69,10 @@ defmodule Xyzzy.Machine.State.Server do
     GenServer.call(via_tuple(game_name), :get_state)
   end
 
+  def stop(game_name) do
+    GenServer.stop(via_tuple(game_name))
+  end
+
   ### Private GenServer API ###
 
   def init(story) do
