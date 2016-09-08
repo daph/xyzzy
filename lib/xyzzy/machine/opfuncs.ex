@@ -69,10 +69,11 @@ defmodule Xyzzy.Machine.OpFuncs do
     State.Server.clear_stack(game_name)
   end
 
-  defp math_op(func, info = %OpInfo{operands: [a1, a2]}, game_name) do
-    sa1 = make_signed(a1)
-    sa2 = make_signed(a2)
-    val = func.(sa1, sa2)
+  defp math_op(func, info, game_name) do
+    val =
+      info.operands
+      |> Enum.map(&make_signed/1)
+      |> Enum.reduce(func)
 
     write_variable(info.return_store, val, game_name)
 
