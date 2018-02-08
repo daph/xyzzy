@@ -1,7 +1,7 @@
 # Xyzzy
 
-An Interactive Fiction Interpreter (ZMachine) in Elixir.
+An Interactive Fiction Interpreter (Z-machine) in Elixir.
 
-I'm referencing http://inform-fiction.org/zmachine/standards/z1point1/ for the information on how the zmachine works.
+I'm referencing the [Z-Machine Standards Document v1.1](http://inform-fiction.org/zmachine/standards/z1point1/) for the information on how the Z-machine works.
 
-Progress is slow going and I even stopped working on it for 5 months straight. However the goal is to eventually hook this up to slack for some fun. That means leaving out support for games that require fancy graphics, timing, or sounds. So this will probably be restricted to the earlier z-machine games only, like Zork.
+The goal is to eventually hook this up to [Slack](https://slack.com/) for some fun. That means leaving out support for games that require fancy graphics, timing, or sounds. So this will probably be restricted to the earlier Z-machine games only, like [Zork](https://en.wikipedia.org/wiki/Zork).
