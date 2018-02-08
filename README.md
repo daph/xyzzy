@@ -1,6 +1,6 @@
 # Xyzzy
 
-An Interactive Fiction Interpreter (Z-machine) in Elixir.
+An [Interactive Fiction](https://en.wikipedia.org/wiki/Interactive_fiction) interpreter (Z-machine) in [Elixir](https://elixir-lang.org/).
 
 I'm referencing the [Z-Machine Standards Document v1.1](http://inform-fiction.org/zmachine/standards/z1point1/) for the information on how the Z-machine works.
 
