@@ -21,20 +21,23 @@ Getting Started
 
 - Change to the directory where you cloned the Xyzzy repository and type:
 
- ```[insert commands to build the app here]```
+ ```mix do deps.get, compile```
 
 
 **Download some Z-machine games! Try some of these websites:**
 
-- [website1](url1)
-- [website2](url2)
+- [INFOCOM Downloads](http://www.infocom-if.org/downloads/downloads.html)
+- [IFDB](http://ifdb.tads.org/)
 
 
 **Run Xyzzy with your adventure:**
 
 - Again from the Xyzzy directory, type:
 
- ```[insert commands to run the app with path_to_story/story.ext here]```
+ ~~~
+ iex -S mix
+ Xyzzy.Machine.open_story("stories/zork_1.z3") |> Xyzzy.Machine.run_story()
+ ~~~
 
 
 Additional Resources
